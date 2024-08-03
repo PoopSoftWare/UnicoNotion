@@ -1,0 +1,121 @@
+// ==UserScript==
+// @name         UnicoNotion
+// @version      2.0
+// @description  Напоминания для ответа клиентам в Chat2Desk с улучшенными функциями
+// @author       Ебейший 77
+// @match        *://web.chat2desk.com/*
+// @match        *://web.chat2desk.by/*
+// @grant        none
+// @license MIT
+// @namespace https://greasyfork.org/users/1338837
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    const reminderButton = document.createElement('button');
+    reminderButton.textContent = '+';
+    reminderButton.style.position = 'fixed';
+    reminderButton.style.bottom = '10vh'; 
+    reminderButton.style.left = '1vw';
+    reminderButton.style.zIndex = 1000;
+    reminderButton.style.width = '60px';
+    reminderButton.style.height = '60px';
+    reminderButton.style.backgroundColor = '#808080';
+    reminderButton.style.color = 'white';
+    reminderButton.style.border = 'none';
+    reminderButton.style.borderRadius = '50%';
+    reminderButton.style.cursor = 'pointer';
+    reminderButton.style.fontSize = '24px';
+    reminderButton.style.display = 'flex';
+    reminderButton.style.justifyContent = 'center';
+    reminderButton.style.alignItems = 'center';
+    document.body.appendChild(reminderButton);
+
+  
+    const formContainer = document.createElement('div');
+    formContainer.style.display = 'none';
+    formContainer.style.position = 'fixed';
+    formContainer.style.top = '20vh'; 
+    formContainer.style.left = '2vw';
+    formContainer.style.zIndex = 1001;
+    formContainer.style.backgroundColor = 'white';
+    formContainer.style.padding = '20px';
+    formContainer.style.border = '1px solid #ddd';
+    formContainer.style.boxShadow = '0 0 10px rgba(0,0,0,0.1)';
+    formContainer.style.borderRadius = '8px';
+    formContainer.style.width = '300px'; 
+    formContainer.innerHTML = `
+        <h3>Добавить напоминание</h3>
+        <label>ID клиента:</label>
+        <input type="text" id="clientId" style="width: 100%; margin-bottom: 10px;">
+        <label>Текст напоминания:</label>
+        <input type="text" id="reminderText" style="width: 100%; margin-bottom: 10px;">
+        <label>Через сколько минут напомнить:</label>
+        <input type="number" id="reminderTime" style="width: 100%; margin-bottom: 10px;">
+        <button id="saveReminder" style="width: 100%;">Сохранить</button>
+        <button id="closeForm" style="width: 100%; margin-top: 10px;">Закрыть</button>
+    `;
+    document.body.appendChild(formContainer);
+
+  
+    const audio = new Audio('https://www.soundjay.com/buttons/sounds/button-7.mp3');
+
+ 
+    reminderButton.addEventListener('click', () => {
+        formContainer.style.display = 'block';
+    });
+
+   
+    document.getElementById('closeForm').addEventListener('click', () => {
+        formContainer.style.display = 'none';
+    });
+
+
+    document.getElementById('saveReminder').addEventListener('click', () => {
+        const clientId = document.getElementById('clientId').value;
+        const reminderText = document.getElementById('reminderText').value;
+        const reminderTime = parseInt(document.getElementById('reminderTime').value);
+
+        if (!clientId || !reminderText || isNaN(reminderTime)) {
+            alert('Заполните все поля');
+            return;
+        }
+
+        const reminder = {
+            clientId,
+            reminderText,
+            reminderTime,
+            reminderTimestamp: Date.now() + reminderTime * 60000
+        };
+
+        let reminders = JSON.parse(localStorage.getItem('reminders')) || [];
+        reminders.push(reminder);
+        localStorage.setItem('reminders', JSON.stringify(reminders));
+
+        formContainer.style.display = 'none';
+        alert('Напоминание сохранено');
+    });
+
+
+    function checkReminders() {
+        let reminders = JSON.parse(localStorage.getItem('reminders')) || [];
+        const now = Date.now();
+
+        reminders = reminders.filter(reminder => {
+            if (now >= reminder.reminderTimestamp) {
+                audio.play(); 
+                alert(`Напоминание: ${reminder.clientId}: ${reminder.reminderText}`);
+                return false; 
+            }
+            return true;
+        });
+
+        localStorage.setItem('reminders', JSON.stringify(reminders));
+    }
+
+    setInterval(checkReminders, 60000); 
+
+
+    checkReminders();
+})();
