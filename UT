@@ -1,17 +1,43 @@
 // ==UserScript==
 // @name         UnicoNotion
-// @version      2
-// @description  Напоминания для ответа клиентам в Chat2Desk с улучшенными функциями
+// @version      2.1
+// @description  Напоминания для ответа клиентам в Chat2Desk с улучшенными функциями и проверкой обновлений
 // @author       Ебейший 77
 // @match        *://web.chat2desk.com/*
 // @match        *://web.chat2desk.by/*
-// @grant        none
+// @grant        GM_xmlhttpRequest
+// @grant        GM_openInTab
 // @license MIT
 // @namespace https://greasyfork.org/users/1338837
+// @downloadURL https://update.greasyfork.org/scripts/502540/UnicoNotion.user.js
+// @updateURL https://update.greasyfork.org/scripts/502540/UnicoNotion.meta.js
 // ==/UserScript==
 
 (function() {
     'use strict';
+
+    const currentVersion = '2.1';
+    const updateUrl = 'https://raw.githubusercontent.com/PoopSoftWare/UnicoNotion/main/UT';
+
+    // Function to check for updates
+    function checkForUpdates() {
+        GM_xmlhttpRequest({
+            method: 'GET',
+            url: updateUrl,
+            onload: function(response) {
+                if (response.status === 200) {
+                    const latestVersion = response.responseText.trim();
+                    if (latestVersion !== currentVersion) {
+                        const updatePageUrl = 'https://greasyfork.org/scripts/502540-uniconotion';
+                        GM_openInTab(updatePageUrl, { active: true });
+                    }
+                }
+            }
+        });
+    }
+
+    // Check for updates when the script runs
+    checkForUpdates();
 
     const reminderButton = document.createElement('button');
     reminderButton.textContent = '+';
@@ -32,7 +58,6 @@
     reminderButton.style.alignItems = 'center';
     document.body.appendChild(reminderButton);
 
-  
     const formContainer = document.createElement('div');
     formContainer.style.display = 'none';
     formContainer.style.position = 'fixed';
@@ -58,19 +83,15 @@
     `;
     document.body.appendChild(formContainer);
 
-  
     const audio = new Audio('https://www.soundjay.com/buttons/sounds/button-7.mp3');
 
- 
     reminderButton.addEventListener('click', () => {
         formContainer.style.display = 'block';
     });
 
-   
     document.getElementById('closeForm').addEventListener('click', () => {
         formContainer.style.display = 'none';
     });
-
 
     document.getElementById('saveReminder').addEventListener('click', () => {
         const clientId = document.getElementById('clientId').value;
@@ -97,7 +118,6 @@
         alert('Напоминание сохранено');
     });
 
-
     function checkReminders() {
         let reminders = JSON.parse(localStorage.getItem('reminders')) || [];
         const now = Date.now();
@@ -115,7 +135,6 @@
     }
 
     setInterval(checkReminders, 60000); 
-
 
     checkReminders();
 })();
