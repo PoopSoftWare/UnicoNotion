@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         UnicoNotion
-// @version      2.5
+// @version      2.6
 // @description  Напоминания для ответа клиентам в Chat2Desk с улучшенными функциями и проверкой обновлений
 // @author       Ебейший 777
 // @match        *://web.chat2desk.com/*
@@ -11,12 +11,14 @@
 // @namespace https://greasyfork.org/users/1338837
 // @downloadURL https://update.greasyfork.org/scripts/502540/UnicoNotion.user.js
 // @updateURL https://update.greasyfork.org/scripts/502540/UnicoNotion.meta.js
+// @connect      raw.githubusercontent.com
+// @connect      update.greasyfork.org
 // ==/UserScript==
 
 (function() {
     'use strict';
 
-    const currentVersion = '2.5';
+    const currentVersion = '2.6';
     const versionUrl = 'https://update.greasyfork.org/scripts/502540/UnicoNotion.user.js';
 
     function checkForUpdates() {
