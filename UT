@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         UnicoNotion
-// @version      2.7
+// @version      2.9
 // @description  Напоминания для ответа клиентам в Chat2Desk с улучшенными функциями
 // @author       Ебейший 77
 // @match        *://web.chat2desk.com/*
@@ -17,7 +17,7 @@
 
     const GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/PoopSoftWare/UnicoNotion/main/upd';
     const GITHUB_SCRIPT_URL = 'https://update.greasyfork.org/scripts/502540/UnicoNotion.user.js';
-    const CURRENT_VERSION = '2.7';
+    const CURRENT_VERSION = '2.9';
 
     function createButton(text, styles) {
         const button = document.createElement('button');
@@ -45,18 +45,7 @@
         alignItems: 'center',
     });
 
-    const listButton = createButton('Список', {
-        bottom: '10vh',
-        left: '6vw',
-        padding: '10px',
-        backgroundColor: '#4CAF50',
-        color: 'white',
-        border: 'none',
-        borderRadius: '5px',
-    });
-
     document.body.appendChild(reminderButton);
-    document.body.appendChild(listButton);
 
     const formContainer = createFormContainer();
     document.body.appendChild(formContainer);
@@ -67,10 +56,10 @@
     const audio = new Audio('https://www.soundjay.com/buttons/sounds/button-7.mp3');
 
     reminderButton.addEventListener('click', () => formContainer.style.display = 'block');
-    listButton.addEventListener('click', showRemindersList);
 
     document.getElementById('closeForm').addEventListener('click', () => formContainer.style.display = 'none');
     document.getElementById('saveReminder').addEventListener('click', saveReminder);
+    document.getElementById('showList').addEventListener('click', showRemindersList);
 
     function createFormContainer() {
         const container = document.createElement('div');
@@ -89,13 +78,14 @@
         });
         container.innerHTML = `
             <h3>Добавить напоминание</h3>
-            <label>ID клиента:</label>
+            <label>ID Лида:</label>
             <input type="text" id="clientId" style="width: 100%; margin-bottom: 10px;">
             <label>Текст напоминания:</label>
             <input type="text" id="reminderText" style="width: 100%; margin-bottom: 10px;">
             <label>Через сколько минут напомнить:</label>
             <input type="number" id="reminderTime" style="width: 100%; margin-bottom: 10px;">
             <button id="saveReminder" style="width: 100%;">Сохранить</button>
+            <button id="showList" style="width: 100%; margin-top: 10px;">Список напоминаний</button>
             <button id="closeForm" style="width: 100%; margin-top: 10px;">Закрыть</button>
         `;
         return container;
@@ -123,7 +113,10 @@
             <div id="remindersList"></div>
             <button id="closeList" style="width: 100%; margin-top: 10px;">Закрыть</button>
         `;
-        container.querySelector('#closeList').addEventListener('click', () => container.style.display = 'none');
+        container.querySelector('#closeList').addEventListener('click', () => {
+            container.style.display = 'none';
+            formContainer.style.display = 'block';
+        });
         return container;
     }
 
@@ -137,19 +130,24 @@
             return;
         }
 
+        const now = new Date();
         const reminder = {
             clientId,
             reminderText,
             reminderTime,
-            reminderTimestamp: Date.now() + reminderTime * 60000
+            reminderTimestamp: now.getTime() + reminderTime * 60000
         };
 
         let reminders = JSON.parse(localStorage.getItem('reminders')) || [];
         reminders.push(reminder);
         localStorage.setItem('reminders', JSON.stringify(reminders));
 
-        formContainer.style.display = 'none';
         alert('Напоминание сохранено');
+
+        // Clear input fields after saving
+        document.getElementById('clientId').value = '';
+        document.getElementById('reminderText').value = '';
+        document.getElementById('reminderTime').value = '';
     }
 
     function showRemindersList() {
@@ -159,12 +157,11 @@
 
         reminders.forEach((reminder, index) => {
             const reminderTime = new Date(reminder.reminderTimestamp);
-            const moscowTime = new Date(reminderTime.getTime() + (3 * 60 * 60 * 1000)); // МСК = UTC+3
-            const formattedTime = moscowTime.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
+            const formattedTime = formatMoscowTime(reminderTime);
 
             const reminderItem = document.createElement('div');
             reminderItem.innerHTML = `
-                <p><strong>Клиент:</strong> ${reminder.clientId}</p>
+                <p><strong>Лид:</strong> ${reminder.clientId}</p>
                 <p><strong>Напоминание:</strong> ${reminder.reminderText}</p>
                 <p><strong>Время (МСК):</strong> ${formattedTime}</p>
                 <button onclick="deleteReminder(${index})">Удалить</button>
@@ -173,7 +170,27 @@
             listElement.appendChild(reminderItem);
         });
 
+        formContainer.style.display = 'none';
         listContainer.style.display = 'block';
+    }
+
+    function formatMoscowTime(date) {
+        const moscowOffset = 3 * 60; // Moscow is UTC+3
+        const userOffset = -date.getTimezoneOffset();
+        const offsetDiff = moscowOffset - userOffset;
+
+        const moscowDate = new Date(date.getTime() + offsetDiff * 60000);
+
+        return moscowDate.toLocaleString('ru-RU', {
+            timeZone: 'Europe/Moscow',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
     }
 
     function deleteReminder(index) {
@@ -218,6 +235,6 @@
     checkReminders();
     checkForUpdates();
 
-    // Make deleteReminder function available globally
+
     unsafeWindow.deleteReminder = deleteReminder;
 })();
