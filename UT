@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         UnicoNotion
-// @version      2.3
+// @version      2.4
 // @description  Напоминания для ответа клиентам в Chat2Desk с улучшенными функциями и проверкой обновлений
 // @author       Ебейший 777
 // @match        *://web.chat2desk.com/*
@@ -16,7 +16,7 @@
 (function() {
     'use strict';
 
-    const currentVersion = '2.3';
+    const currentVersion = '2.4';
     const updateUrl = 'https://raw.githubusercontent.com/PoopSoftWare/UnicoNotion/main/UT';
 
     function checkForUpdates() {
