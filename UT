@@ -1,112 +1,139 @@
 // ==UserScript==
 // @name         UnicoNotion
-// @version      2.6
-// @description  Напоминания для ответа клиентам в Chat2Desk с улучшенными функциями и проверкой обновлений
-// @author       Ебейший 777
+// @version      2.7
+// @description  Напоминания для ответа клиентам в Chat2Desk с улучшенными функциями
+// @author       Ебейший 77
 // @match        *://web.chat2desk.com/*
 // @match        *://web.chat2desk.by/*
 // @grant        GM_xmlhttpRequest
-// @grant        GM_openInTab
 // @license MIT
 // @namespace https://greasyfork.org/users/1338837
-// @downloadURL https://update.greasyfork.org/scripts/502540/UnicoNotion.user.js
-// @updateURL https://update.greasyfork.org/scripts/502540/UnicoNotion.meta.js
-// @connect      raw.githubusercontent.com
-// @connect      update.greasyfork.org
+// @downloadURL https://raw.githubusercontent.com/PoopSoftWare/UnicoNotion/main/UT
+// @updateURL https://raw.githubusercontent.com/PoopSoftWare/UnicoNotion/main/upd
 // ==/UserScript==
 
 (function() {
     'use strict';
 
-    const currentVersion = '2.6';
-    const versionUrl = 'https://update.greasyfork.org/scripts/502540/UnicoNotion.user.js';
+    const GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/PoopSoftWare/UnicoNotion/main/upd';
+    const GITHUB_SCRIPT_URL = 'https://raw.githubusercontent.com/PoopSoftWare/UnicoNotion/main/UT';
+    const CURRENT_VERSION = '2.7';
 
-    function checkForUpdates() {
-        GM_xmlhttpRequest({
-            method: 'GET',
-            url: versionUrl,
-            onload: function(response) {
-                if (response.status === 200) {
-                    const scriptContent = response.responseText;
-                    const versionMatch = scriptContent.match(/@version\s+([\d.]+)/);
-                    if (versionMatch) {
-                        const latestVersion = versionMatch[1];
-                        if (latestVersion !== currentVersion) {
-                            const updatePageUrl = 'https://update.greasyfork.org/scripts/502540/UnicoNotion.user.js';
-                            GM_openInTab(updatePageUrl, { active: true });
-                        }
-                    }
-                }
-            },
-            onerror: function() {
-                console.error('Failed to check for updates.');
-            }
+    function createButton(text, styles) {
+        const button = document.createElement('button');
+        button.textContent = text;
+        Object.assign(button.style, styles, {
+            position: 'fixed',
+            zIndex: 1000,
+            cursor: 'pointer',
         });
+        return button;
     }
 
-    checkForUpdates();
+    const reminderButton = createButton('+', {
+        bottom: '10vh',
+        left: '1vw',
+        width: '60px',
+        height: '60px',
+        backgroundColor: '#808080',
+        color: 'white',
+        border: 'none',
+        borderRadius: '50%',
+        fontSize: '24px',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+    });
 
-    const reminderButton = document.createElement('button');
-    reminderButton.textContent = '+';
-    reminderButton.style.position = 'fixed';
-    reminderButton.style.bottom = '10vh'; 
-    reminderButton.style.left = '1vw';
-    reminderButton.style.zIndex = 1000;
-    reminderButton.style.width = '60px';
-    reminderButton.style.height = '60px';
-    reminderButton.style.backgroundColor = '#808080';
-    reminderButton.style.color = 'white';
-    reminderButton.style.border = 'none';
-    reminderButton.style.borderRadius = '50%';
-    reminderButton.style.cursor = 'pointer';
-    reminderButton.style.fontSize = '24px';
-    reminderButton.style.display = 'flex';
-    reminderButton.style.justifyContent = 'center';
-    reminderButton.style.alignItems = 'center';
+    const listButton = createButton('Список', {
+        bottom: '10vh',
+        left: '6vw',
+        padding: '10px',
+        backgroundColor: '#4CAF50',
+        color: 'white',
+        border: 'none',
+        borderRadius: '5px',
+    });
+
     document.body.appendChild(reminderButton);
+    document.body.appendChild(listButton);
 
-    const formContainer = document.createElement('div');
-    formContainer.style.display = 'none';
-    formContainer.style.position = 'fixed';
-    formContainer.style.top = '20vh'; 
-    formContainer.style.left = '2vw';
-    formContainer.style.zIndex = 1001;
-    formContainer.style.backgroundColor = 'white';
-    formContainer.style.padding = '20px';
-    formContainer.style.border = '1px solid #ddd';
-    formContainer.style.boxShadow = '0 0 10px rgba(0,0,0,0.1)';
-    formContainer.style.borderRadius = '8px';
-    formContainer.style.width = '300px'; 
-    formContainer.innerHTML = `
-        <h3>Добавить напоминание</h3>
-        <label>ID клиента:</label>
-        <input type="text" id="clientId" style="width: 100%; margin-bottom: 10px;">
-        <label>Текст напоминания:</label>
-        <input type="text" id="reminderText" style="width: 100%; margin-bottom: 10px;">
-        <label>Через сколько минут напомнить:</label>
-        <input type="number" id="reminderTime" style="width: 100%; margin-bottom: 10px;">
-        <button id="saveReminder" style="width: 100%;">Сохранить</button>
-        <button id="closeForm" style="width: 100%; margin-top: 10px;">Закрыть</button>
-    `;
+    const formContainer = createFormContainer();
     document.body.appendChild(formContainer);
+
+    const listContainer = createListContainer();
+    document.body.appendChild(listContainer);
 
     const audio = new Audio('https://www.soundjay.com/buttons/sounds/button-7.mp3');
 
-    reminderButton.addEventListener('click', () => {
-        formContainer.style.display = 'block';
-    });
+    reminderButton.addEventListener('click', () => formContainer.style.display = 'block');
+    listButton.addEventListener('click', showRemindersList);
 
-    document.getElementById('closeForm').addEventListener('click', () => {
-        formContainer.style.display = 'none';
-    });
+    document.getElementById('closeForm').addEventListener('click', () => formContainer.style.display = 'none');
+    document.getElementById('saveReminder').addEventListener('click', saveReminder);
 
-    document.getElementById('saveReminder').addEventListener('click', () => {
+    function createFormContainer() {
+        const container = document.createElement('div');
+        Object.assign(container.style, {
+            display: 'none',
+            position: 'fixed',
+            top: '20vh',
+            left: '2vw',
+            zIndex: 1001,
+            backgroundColor: 'white',
+            padding: '20px',
+            border: '1px solid #ddd',
+            boxShadow: '0 0 10px rgba(0,0,0,0.1)',
+            borderRadius: '8px',
+            width: '300px',
+        });
+        container.innerHTML = `
+            <h3>Добавить напоминание</h3>
+            <label>ID клиента:</label>
+            <input type="text" id="clientId" style="width: 100%; margin-bottom: 10px;">
+            <label>Текст напоминания:</label>
+            <input type="text" id="reminderText" style="width: 100%; margin-bottom: 10px;">
+            <label>Через сколько минут напомнить:</label>
+            <input type="number" id="reminderTime" style="width: 100%; margin-bottom: 10px;">
+            <button id="saveReminder" style="width: 100%;">Сохранить</button>
+            <button id="closeForm" style="width: 100%; margin-top: 10px;">Закрыть</button>
+        `;
+        return container;
+    }
+
+    function createListContainer() {
+        const container = document.createElement('div');
+        Object.assign(container.style, {
+            display: 'none',
+            position: 'fixed',
+            top: '20vh',
+            left: '2vw',
+            zIndex: 1001,
+            backgroundColor: 'white',
+            padding: '20px',
+            border: '1px solid #ddd',
+            boxShadow: '0 0 10px rgba(0,0,0,0.1)',
+            borderRadius: '8px',
+            width: '400px',
+            maxHeight: '60vh',
+            overflowY: 'auto',
+        });
+        container.innerHTML = `
+            <h3>Список напоминаний</h3>
+            <div id="remindersList"></div>
+            <button id="closeList" style="width: 100%; margin-top: 10px;">Закрыть</button>
+        `;
+        container.querySelector('#closeList').addEventListener('click', () => container.style.display = 'none');
+        return container;
+    }
+
+    function saveReminder() {
         const clientId = document.getElementById('clientId').value;
         const reminderText = document.getElementById('reminderText').value;
-        const reminderTime = parseInt(document.getElementById('reminderTime').value, 10);
+        const reminderTime = parseInt(document.getElementById('reminderTime').value);
 
-        if (!clientId || !reminderText || isNaN(reminderTime) || reminderTime <= 0) {
-            alert('Введите корректное значение во всех полях.');
+        if (!clientId || !reminderText || isNaN(reminderTime)) {
+            alert('Заполните все поля');
             return;
         }
 
@@ -123,7 +150,38 @@
 
         formContainer.style.display = 'none';
         alert('Напоминание сохранено');
-    });
+    }
+
+    function showRemindersList() {
+        const reminders = JSON.parse(localStorage.getItem('reminders')) || [];
+        const listElement = document.getElementById('remindersList');
+        listElement.innerHTML = '';
+
+        reminders.forEach((reminder, index) => {
+            const reminderTime = new Date(reminder.reminderTimestamp);
+            const moscowTime = new Date(reminderTime.getTime() + (3 * 60 * 60 * 1000)); // МСК = UTC+3
+            const formattedTime = moscowTime.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
+
+            const reminderItem = document.createElement('div');
+            reminderItem.innerHTML = `
+                <p><strong>Клиент:</strong> ${reminder.clientId}</p>
+                <p><strong>Напоминание:</strong> ${reminder.reminderText}</p>
+                <p><strong>Время (МСК):</strong> ${formattedTime}</p>
+                <button onclick="deleteReminder(${index})">Удалить</button>
+                <hr>
+            `;
+            listElement.appendChild(reminderItem);
+        });
+
+        listContainer.style.display = 'block';
+    }
+
+    function deleteReminder(index) {
+        let reminders = JSON.parse(localStorage.getItem('reminders')) || [];
+        reminders.splice(index, 1);
+        localStorage.setItem('reminders', JSON.stringify(reminders));
+        showRemindersList();
+    }
 
     function checkReminders() {
         let reminders = JSON.parse(localStorage.getItem('reminders')) || [];
@@ -131,9 +189,9 @@
 
         reminders = reminders.filter(reminder => {
             if (now >= reminder.reminderTimestamp) {
-                audio.play(); 
+                audio.play();
                 alert(`Напоминание: ${reminder.clientId}: ${reminder.reminderText}`);
-                return false; 
+                return false;
             }
             return true;
         });
@@ -141,7 +199,25 @@
         localStorage.setItem('reminders', JSON.stringify(reminders));
     }
 
-    setInterval(checkReminders, 60000); 
+    function checkForUpdates() {
+        GM_xmlhttpRequest({
+            method: 'GET',
+            url: GITHUB_VERSION_URL,
+            onload: function(response) {
+                const latestVersion = response.responseText.trim();
+                if (latestVersion > CURRENT_VERSION) {
+                    if (confirm(`Доступна новая версия (${latestVersion}). Обновить сейчас?`)) {
+                        window.location.href = GITHUB_SCRIPT_URL;
+                    }
+                }
+            }
+        });
+    }
 
+    setInterval(checkReminders, 60000);
     checkReminders();
+    checkForUpdates();
+
+    // Make deleteReminder function available globally
+    unsafeWindow.deleteReminder = deleteReminder;
 })();
