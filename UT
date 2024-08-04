@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         UnicoNotion
-// @version      2.4
+// @version      2.5
 // @description  Напоминания для ответа клиентам в Chat2Desk с улучшенными функциями и проверкой обновлений
 // @author       Ебейший 777
 // @match        *://web.chat2desk.com/*
@@ -16,21 +16,28 @@
 (function() {
     'use strict';
 
-    const currentVersion = '2.4';
-    const updateUrl = 'https://raw.githubusercontent.com/PoopSoftWare/UnicoNotion/main/UT';
+    const currentVersion = '2.5';
+    const versionUrl = 'https://update.greasyfork.org/scripts/502540/UnicoNotion.user.js';
 
     function checkForUpdates() {
         GM_xmlhttpRequest({
             method: 'GET',
-            url: updateUrl,
+            url: versionUrl,
             onload: function(response) {
                 if (response.status === 200) {
-                    const latestVersion = response.responseText.trim();
-                    if (latestVersion !== currentVersion) {
-                        const updatePageUrl = 'https://greasyfork.org/scripts/502540-uniconotion';
-                        GM_openInTab(updatePageUrl, { active: true });
+                    const scriptContent = response.responseText;
+                    const versionMatch = scriptContent.match(/@version\s+([\d.]+)/);
+                    if (versionMatch) {
+                        const latestVersion = versionMatch[1];
+                        if (latestVersion !== currentVersion) {
+                            const updatePageUrl = 'https://update.greasyfork.org/scripts/502540/UnicoNotion.user.js';
+                            GM_openInTab(updatePageUrl, { active: true });
+                        }
                     }
                 }
+            },
+            onerror: function() {
+                console.error('Failed to check for updates.');
             }
         });
     }
@@ -94,10 +101,10 @@
     document.getElementById('saveReminder').addEventListener('click', () => {
         const clientId = document.getElementById('clientId').value;
         const reminderText = document.getElementById('reminderText').value;
-        const reminderTime = parseInt(document.getElementById('reminderTime').value);
+        const reminderTime = parseInt(document.getElementById('reminderTime').value, 10);
 
-        if (!clientId || !reminderText || isNaN(reminderTime)) {
-            alert('Заполните все поля');
+        if (!clientId || !reminderText || isNaN(reminderTime) || reminderTime <= 0) {
+            alert('Введите корректное значение во всех полях.');
             return;
         }
 
