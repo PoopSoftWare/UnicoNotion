@@ -1,15 +1,15 @@
 // ==UserScript==
 // @name         UnicoNotion
-// @version      2.9.1
+// @version      2.9.2
 // @description  Скрипт,который позволяет ставить напоминание на клиента через определенное время.
 // @author       Ебейший 77
-// @match        *://web.chat2desk.com/*
+// @match        *://web-unico.chat2desk.com/*
 // @match        *://web.chat2desk.by/*
 // @grant        GM_xmlhttpRequest
 // @license MIT
 // @namespace https://greasyfork.org/users/1338837
 // @downloadURL https://update.greasyfork.org/scripts/502630/UnicoNotion.user.js
-// @updateURL https://update.greasyfork.org/scripts/502630/UnicoNotion.user.js 
+// @updateURL https://update.greasyfork.org/scripts/502630/UnicoNotion.meta.js
 // ==/UserScript==
 
 (function() {
@@ -17,7 +17,7 @@
 
     const GITHUB_VERSION_URL = 'https://raw.githubusercontent.com/PoopSoftWare/UnicoNotion/main/upd';
     const GITHUB_SCRIPT_URL = 'https://update.greasyfork.org/scripts/502630/UnicoNotion.user.js';
-    const CURRENT_VERSION = '2.9.1';
+    const CURRENT_VERSION = '2.9.2';
 
     function createButton(text, styles) {
         const button = document.createElement('button');
@@ -61,6 +61,9 @@
     document.getElementById('saveReminder').addEventListener('click', saveReminder);
     document.getElementById('showList').addEventListener('click', showRemindersList);
 
+    // Добавляем функциональность перетаскивания формы
+    makeFormDraggable(formContainer);
+
     function createFormContainer() {
         const container = document.createElement('div');
         Object.assign(container.style, {
@@ -75,6 +78,7 @@
             boxShadow: '0 0 10px rgba(0,0,0,0.1)',
             borderRadius: '8px',
             width: '300px',
+            cursor: 'move', // Указываем, что форма перетаскиваемая
         });
         container.innerHTML = `
             <h3>Добавить напоминание</h3>
@@ -82,8 +86,10 @@
             <input type="text" id="clientId" style="width: 100%; margin-bottom: 10px;">
             <label>Текст напоминания:</label>
             <input type="text" id="reminderText" style="width: 100%; margin-bottom: 10px;">
-            <label>Через сколько минут напомнить:</label>
-            <input type="number" id="reminderTime" style="width: 100%; margin-bottom: 10px;">
+            <label>Через сколько часов:</label>
+            <input type="number" id="reminderHours" style="width: 100%; margin-bottom: 10px;" min="0" placeholder="Часы">
+            <label>Через сколько минут:</label>
+            <input type="number" id="reminderMinutes" style="width: 100%; margin-bottom: 10px;" min="0" placeholder="Минуты">
             <button id="saveReminder" style="width: 100%;">Сохранить</button>
             <button id="showList" style="width: 100%; margin-top: 10px;">Список напоминаний</button>
             <button id="closeForm" style="width: 100%; margin-top: 10px;">Закрыть</button>
@@ -123,9 +129,10 @@
     function saveReminder() {
         const clientId = document.getElementById('clientId').value;
         const reminderText = document.getElementById('reminderText').value;
-        const reminderTime = parseInt(document.getElementById('reminderTime').value);
+        const reminderHours = parseInt(document.getElementById('reminderHours').value) || 0;
+        const reminderMinutes = parseInt(document.getElementById('reminderMinutes').value) || 0;
 
-        if (!clientId || !reminderText || isNaN(reminderTime)) {
+        if (!clientId || !reminderText || (isNaN(reminderHours) && isNaN(reminderMinutes))) {
             alert('Заполните все поля');
             return;
         }
@@ -134,8 +141,8 @@
         const reminder = {
             clientId,
             reminderText,
-            reminderTime,
-            reminderTimestamp: now.getTime() + reminderTime * 60000
+            reminderTime: reminderHours * 60 + reminderMinutes,
+            reminderTimestamp: now.getTime() + (reminderHours * 60 + reminderMinutes) * 60000
         };
 
         let reminders = JSON.parse(localStorage.getItem('reminders')) || [];
@@ -144,10 +151,11 @@
 
         alert('Напоминание сохранено');
 
-        // Clear input fields after saving
+        // Очищаем поля после сохранения
         document.getElementById('clientId').value = '';
         document.getElementById('reminderText').value = '';
-        document.getElementById('reminderTime').value = '';
+        document.getElementById('reminderHours').value = '';
+        document.getElementById('reminderMinutes').value = '';
     }
 
     function showRemindersList() {
@@ -231,10 +239,35 @@
         });
     }
 
-    setInterval(checkReminders, 60000);
-    checkReminders();
+    // Функция для перетаскивания формы
+    function makeFormDraggable(element) {
+        let isDragging = false;
+        let offsetX = 0;
+        let offsetY = 0;
+
+        element.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            offsetX = e.clientX - element.getBoundingClientRect().left;
+            offsetY = e.clientY - element.getBoundingClientRect().top;
+            element.style.cursor = 'grabbing';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const x = e.clientX - offsetX;
+                const y = e.clientY - offsetY;
+                element.style.left = `${x}px`;
+                element.style.top = `${y}px`;
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+            element.style.cursor = 'move';
+        });
+    }
+
+    setInterval(checkReminders, 60000); // Проверка каждую минуту
     checkForUpdates();
-
-
-    unsafeWindow.deleteReminder = deleteReminder;
 })();
+
