@@ -9,7 +9,7 @@
 // @license MIT
 // @namespace https://greasyfork.org/users/1338837
 // @downloadURL https://update.greasyfork.org/scripts/502630/UnicoNotion.user.js
-// @updateURL https://update.greasyfork.org/scripts/502630/UnicoNotion.meta.js
+// @updateURL https://update.greasyfork.org/scripts/502630/UnicoNotion.user.js
 // ==/UserScript==
 
 (function() {
